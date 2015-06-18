@@ -15,15 +15,21 @@
         return {
           template: '<div class="progress {{valueClass.outter}}"><div class="{{valueClass.inner}} {{innerClass}}" role="progressbar" aria-valuenow="{{value}}" aria-valuemin="0" aria-valuemax="100" ng-style="{width : ( value + \'%\' ) }"><span class="sr-only">{{value}}%</span></div></div>',
           restrict: 'A',
+          require: 'ngModel',
           scope: {
             pwd: '=ngPasswordStrength',
             value: '=strength',
+            minStrengthPersentage: '=?',
+            minNumberAmount: '=?',
+            minUpperAmount: '=?',
+            minLowerAmount: '=?',
+            minSymbolAmount: '=?',
             innerClassPrefix: '@?',
             outterClassPrefix: '@?',
             innerClass: '@?',
             mode: '=?'
           },
-          link: function(scope /*, elem, attrs*/ ) {
+          link: function(scope, elem, attrs, ngModel) {
             var modes = {
                 foundation: {
                   innerClass: 'meter'
@@ -58,7 +64,13 @@
                   back,
                   forth,
                   i;
-
+          
+                  if (!scope.minStrengthPersentage) scope.minStrengthPersentage=0;
+                  if (!scope.minNumberAmount) scope.minNumberAmount=0;
+                  if (!scope.minUpperAmount) scope.minUpperAmount=0;
+                  if (!scope.minLowerAmount) scope.minLowerAmount=0;
+                  if (!scope.minSymbolAmount) scope.minSymbolAmount=0;
+          
                 if (p) {
                   // Benefits
                   matches.pos.lower = p.match(/[a-z]/g);
@@ -73,6 +85,11 @@
                   counts.pos.numbers = matches.pos.numbers ? matches.pos.numbers.length : 0;
                   counts.pos.symbols = matches.pos.symbols ? matches.pos.symbols.length : 0;
 
+                  scope.cntNmb = counts.pos.numbers;
+                  scope.cntUpp = counts.pos.upper;
+                  scope.cntLwr = counts.pos.lower;
+                  scope.cntSmb = counts.pos.symbols;
+          
                   tmp = _.reduce(counts.pos, function(memo, val) {
                     // if has count will add 1
                     return memo + Math.min(1, val);
@@ -215,7 +232,24 @@
               scope.value = measureStrength(scope.pwd);
               scope.valueClass = getClass(scope.value);
               scope.$parent.$parent.strengthValue = scope.value; // first $parent is popover, second $parent is createAccountController
+              ngModel.$validate();
             });
+      
+            ngModel.$validators.ngPasswordStrengthPersentage = function() {
+                return scope.value >= scope.minStrengthPersentage;
+            };
+            ngModel.$validators.ngPasswordStrengthUpperAmount = function() {
+                return scope.minUpperAmount <= scope.cntUpp;
+            };
+            ngModel.$validators.ngPasswordStrengthLowerAmount = function() {
+                return scope.minLowerAmount <= scope.cntLwr;
+            };
+            ngModel.$validators.ngPasswordStrengthNumberAmount = function() {
+                return scope.minNumberAmount <= scope.cntNmb;
+            };
+            ngModel.$validators.ngPasswordStrengthSymbolAmount = function() {
+                return scope.minSymbolAmount <= scope.cntSmb;
+            };          
           },
         };
       });
